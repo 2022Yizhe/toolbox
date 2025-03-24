@@ -7,9 +7,9 @@ is_processing = False  # 标记任务是否在进行中
 
 class Service:
 
-    def set_processing(self, value: bool):
+    def set_processing(self):
         global is_processing
-        is_processing = value
+        is_processing = True
 
     def get_processing(self):
         return is_processing
@@ -17,17 +17,43 @@ class Service:
     def get_result(self):
         return filter.result
 
-    def start_filter(self, image_source: str, mode_separated: str, quality_filtered: str, cpu_workers: str):
+    def start_filter(self, image_source: str, cache: str, output: str, cpu_workers: str, conf: dict):
         """ 过滤图片，按格式和质量分类，并删除重复文件 """
         cpu_workers = int(cpu_workers)
-        conf = { 
-            "image_source": image_source,
-            'mode_separated': mode_separated,
-            'quality_filtered': quality_filtered,
-            'CPU_workers': cpu_workers
-        }
-        filter.filter_images(conf)
-        global is_processing    # 标记任务结束
+
+        by_mode = conf['by_mode']
+        by_quality = conf['by_quality']
+        cls_cache = conf['cls_cache']
+        cls_duplicate = conf['cls_duplicate']
+
+        # 规划任务流程
+        last = False
+        if by_mode:
+            filter.separate_mode(image_source, cache, cpu_workers)
+            last = True
+        else:
+            file.copy_tree(image_source, cache)
+            last = False
+        if by_quality:
+            if last:
+                filter.separate_quality(cache+"\\JPEG", output+"\\JPEG", cpu_workers)
+                filter.separate_quality(cache+"\\PNG", output+"\\PNG", cpu_workers)
+            else:
+                filter.separate_quality(cache, output, cpu_workers)
+        else:
+            file.move_files(cache, output)
+        
+        if cls_duplicate:
+            filter.clear_duplicate(output)
+        else:
+            ...
+        if cls_cache:
+            filter.clear_cache(cache)
+        else:
+            ...
+
+        # 标记任务结束
+        global is_processing 
         is_processing = False
     
 

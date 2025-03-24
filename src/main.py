@@ -144,9 +144,13 @@ class ToolboxApp:
         self.progressbar.grid(row=5, column=1, padx=20, pady=20)
         self.progressbar["value"] = 0  # 初始化进度条为 0
 
-        # 进度信息
+        # 进度任务信息标签
         self.progress_label = tk.Label(self.tab1, text="-/-")
-        self.progress_label.grid(row=6, column=0, padx=20, pady=10)
+        self.progress_label.grid(row=6, column=0, padx=10, pady=10)
+
+        # 进度详细信息标签
+        self.progress_detail_label = tk.Label(self.tab1, text="没有正在进行的任务")
+        self.progress_detail_label.grid(row=6, column=1, padx=10, pady=10)
 
 
 
@@ -294,9 +298,10 @@ class ToolboxApp:
             result = serv.get_result()
             if result is not None:
                 self.progressbar["value"] = result["progress"]
-                self.progress_label["text"] = f"1/1 {result['processed']}/{result['total_jobs']}"
+                self.progress_label["text"] = f"{result['processed']}/{result['total_jobs']}"
+                self.progress_detail_label["text"] = f"{result['processed']}/{result['total_jobs']}：{result['current_job']}"
             # 继续定期检查
-            self.master.after(200, lambda: self.check_progress(serv))  # 每 200 毫秒检查一次
+            self.master.after(100, lambda: self.check_progress(serv))  # 每 200 毫秒检查一次
 
 
     def filter_images_script(self):
@@ -305,6 +310,12 @@ class ToolboxApp:
         mode_separated = self.mode_separated_entry.get()
         quality_filtered = self.quality_filtered_entry.get()
         cpu_workers = self.cpu_workers_entry.get()
+        conf = {
+            'by_mode': True,
+            'by_quality': True,
+            'cls_cache': True,
+            'cls_duplicate': True
+        }
 
         # 检查是否所有参数都已输入
         if image_source == "" or mode_separated == "" or quality_filtered == "" or cpu_workers == "":
@@ -313,10 +324,10 @@ class ToolboxApp:
 
         # 开始一个新线程来执行过滤
         serv = service.Service()
-        threading.Thread(target=serv.start_filter, args=(image_source, mode_separated, quality_filtered, cpu_workers)).start()
+        threading.Thread(target=serv.start_filter, args=(image_source, mode_separated, quality_filtered, cpu_workers, conf)).start()
 
         # 启动定期检查进度
-        serv.set_processing(True)
+        serv.set_processing()
         self.check_progress(serv)
 
     def merge_script(self):
