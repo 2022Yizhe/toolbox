@@ -21,14 +21,28 @@ def move_files(src: str, dst: str, target_dir: str|None):
     移动目录或文件 (跨文件系统)
     """
     try:
-        # 根据提示是否创建并移动到子级目录下
+        # 处理目标目录路径
         if target_dir is not None:
             dst = os.path.join(dst, target_dir)
-        # 创建目标文件的父级目录, 确保在移动单个文件时父级目录存在
-        father_dir = os.path.dirname(dst)
-        if not os.path.exists(father_dir):
-            os.makedirs(father_dir, exist_ok=True)
-        shutil.move(src, dst)
+        
+        # 创建目标目录的父目录 (移动单个文件时确保目录存在)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        
+        # 如果源是目录，移动其内容而非整个目录
+        if os.path.isdir(src):
+            # 确保目标目录存在
+            os.makedirs(dst, exist_ok=True)
+            # 遍历源目录中的项目
+            for item in os.listdir(src):
+                src_item = os.path.join(src, item)
+                dst_item = os.path.join(dst, item)
+                shutil.move(src_item, dst_item)
+            # 可选：删除空的源目录
+            if not os.listdir(src):
+                os.rmdir(src)
+        else:
+            # 移动单个文件
+            shutil.move(src, dst)
     except Exception as e:
         raise e
 
@@ -54,7 +68,7 @@ def copy_tree(src: str, dst: str, target_dir: str|None):
         # 根据提示是否创建并复制到子级目录下
         if target_dir is not None:
             dst = os.path.join(dst, target_dir)
-        shutil.copytree(src, dst)
+        shutil.copytree(src, dst, dirs_exist_ok=True)
     except Exception as e:
         raise e
     
@@ -178,12 +192,13 @@ def delete_dirs(target: str, only_empty = True):
         for root, dirs, files in os.walk(target, topdown=False):
             for dir in dirs:
                 dir_path = os.path.join(root, dir)
-                if len(os.listdir(dir_path)) == 0:
-                    if only_empty:
+                if only_empty:
+                    if len(os.listdir(dir_path)) == 0:
                         os.rmdir(dir_path)
-                        print(f"[delete] {dir_path}")
-                    else:
-                        print(f"[delete] not sure empty -> {dir_path}")
+                        print(f"[delete] empty: {dir_path}")
+                else:
+                    os.rmdir(dir_path)
+                    print(f"[delete] all: {dir_path}")
     except Exception as e:
         print(f"[delete] error: {e}")
         raise e

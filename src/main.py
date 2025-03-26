@@ -135,22 +135,42 @@ class ToolboxApp:
         if conf["CPU_workers"] is not None:
             self.cpu_workers_entry.insert(0, conf["CPU_workers"])
 
+        # 复选框 - 按模式
+        self.option1_var = tk.BooleanVar(value=False)    # 创建变量来指定复选框状态
+        self.check_mode_var = tk.Checkbutton(self.tab1, text="按模式", variable=self.option1_var, command=None)
+        self.check_mode_var.grid(row=5, column=0, columnspan=1, pady=10)
+
+        # 复选框 - 按质量
+        self.option2_var = tk.BooleanVar(value=True)
+        self.check_quality_var = tk.Checkbutton(self.tab1, text="按质量", variable=self.option2_var, command=None)
+        self.check_quality_var.grid(row=5, column=1, columnspan=1, pady=10)
+
+        # 复选框 - 查重
+        self.option3_var = tk.BooleanVar(value=True)
+        self.check_duplicate_var = tk.Checkbutton(self.tab1, text="查重", variable=self.option3_var, command=None)
+        self.check_duplicate_var.grid(row=6, column=0, columnspan=1, pady=10)
+
+        # 清除缓存
+        self.option4_var = tk.BooleanVar(value=True)
+        self.check_clear_cache_var = tk.Checkbutton(self.tab1, text="清除缓存", variable=self.option4_var, command=None)
+        self.check_clear_cache_var.grid(row=6, column=1, columnspan=1, pady=10)
+
         # 分类按钮 (监听点击分类操作，将参数传递给 filter_images_script)
         self.filter_button = tk.Button(self.tab1, text="开始分类", command=self.filter_images_script)
-        self.filter_button.grid(row=5, column=0, padx=20, pady=20)
+        self.filter_button.grid(row=7, column=0, padx=20, pady=20)
 
         # 进度条
         self.progressbar = ttk.Progressbar(self.tab1, orient="horizontal", length=640, mode="determinate")
-        self.progressbar.grid(row=5, column=1, padx=20, pady=20)
+        self.progressbar.grid(row=7, column=1, padx=20, pady=20)
         self.progressbar["value"] = 0  # 初始化进度条为 0
 
         # 进度任务信息标签
         self.progress_label = tk.Label(self.tab1, text="-/-")
-        self.progress_label.grid(row=6, column=0, padx=10, pady=10)
+        self.progress_label.grid(row=8, column=0, padx=10, pady=10)
 
         # 进度详细信息标签
         self.progress_detail_label = tk.Label(self.tab1, text="没有正在进行的任务")
-        self.progress_detail_label.grid(row=6, column=1, padx=10, pady=10)
+        self.progress_detail_label.grid(row=8, column=1, padx=10, pady=10)
 
 
 
@@ -298,8 +318,9 @@ class ToolboxApp:
             result = serv.get_result()
             if result is not None:
                 self.progressbar["value"] = result["progress"]
-                self.progress_label["text"] = f"{result['processed']}/{result['total_jobs']}"
-                self.progress_detail_label["text"] = f"{result['processed']}/{result['total_jobs']}：{result['current_job']}"
+                if result["total_jobs"] != 0:
+                    self.progress_label["text"] = f"{result['processed']}/{result['total_jobs']}"
+                    self.progress_detail_label["text"] = f"{result['processed']}/{result['total_jobs']}：{result['current_job']}"
             # 继续定期检查
             self.master.after(100, lambda: self.check_progress(serv))  # 每 200 毫秒检查一次
 
@@ -311,10 +332,10 @@ class ToolboxApp:
         quality_filtered = self.quality_filtered_entry.get()
         cpu_workers = self.cpu_workers_entry.get()
         conf = {
-            'by_mode': True,
-            'by_quality': True,
-            'cls_cache': True,
-            'cls_duplicate': True
+            'by_mode': self.option1_var.get(),  # 获取复选框值
+            'by_quality': self.option2_var.get(),
+            'cls_duplicate': self.option3_var.get(),
+            'cls_cache': self.option4_var.get()
         }
 
         # 检查是否所有参数都已输入
