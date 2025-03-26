@@ -3,25 +3,22 @@
 import os
 from PIL import Image
 import concurrent.futures
-import time 
+import time
+
 
 result = {
-    "total_tasks": 0,
-    "current_task": 0,
+    "current_task": "",
     "total_jobs": 0,
     "processed": 0,
-    "progress": 0,
-    "current_job": "没有正在进行的任务"
+    "current_job": "等待中"
 }
 
 def clear_result():
     global result
-    result['total_tasks'] = 0
-    result['current_task'] = 0
+    result['current_task'] = ""
     result['total_jobs'] = 0
     result['processed'] = 0
-    result['progress'] = 0
-    result['current_job'] = "没有正在进行的任务"
+    result['current_job'] = "等待中"
 
 
 ##
@@ -71,7 +68,6 @@ def process_format(filename, input_dir, output_dir):
 def separate_mode(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
     """多线程图片按格式分离主函数"""
     try:
-        clear_result()  # 清空结果
         start_time = time.time()
         
         # 获取所有文件，保存为列表
@@ -81,7 +77,9 @@ def separate_mode(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
                 file_list.append(f)
         
         # 进度跟踪参数
+        clear_result()  # 清空结果
         global result
+        result['current_task'] = "separate mode"
         result["total_jobs"] = len(file_list)
         result['processed'] = 0
 
@@ -96,9 +94,8 @@ def separate_mode(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
                     future.result()
                 except Exception as e:
                     print(f"[separate mode] 处理异常: {str(e)}")
-                finally:    # 计算进度百分比
+                finally:    # 记录进度
                     result['processed'] += 1
-                    result['progress'] = result['processed'] / result['total_jobs'] * 100
                     result['current_job'] = file_list[result['processed'] - 1]
             
         end_time = time.time()
@@ -144,7 +141,6 @@ def process_separate_quality(filename, input_dir, output_dir):
 def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
     """多线程图片按质量分离主函数"""
     try:
-        clear_result()
         start_time = time.time()
 
         # 获取所有文件，保存为列表
@@ -152,6 +148,13 @@ def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1)-> di
         for f in os.listdir(input_dir):
             if os.path.isfile(os.path.join(input_dir, f)):
                 file_list.append(f)
+
+        # 进度跟踪参数
+        global result
+        clear_result()  # 清空结果
+        result['current_task'] = "separate quality"
+        result["total_jobs"] = len(file_list)
+        result['processed'] = 0
 
         # 创建线程池（根据 CPU 核心数自动调整）
         with concurrent.futures.ThreadPoolExecutor(max_workers=CPU_workers) as executor:
@@ -164,6 +167,9 @@ def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1)-> di
                     future.result()
                 except Exception as e:
                     print(f"[separate quality] 处理异常: {str(e)}")
+                finally:    # 记录进度
+                    result['processed'] += 1
+                    result['current_job'] = file_list[result['processed'] - 1]
 
         end_time = time.time()
         return {'cost_time': end_time - start_time}
@@ -213,6 +219,13 @@ def clear_duplicate(input_dir: str, CPU_workers: int = 1)-> dict:
         for f in os.listdir(input_dir):
             if os.path.isfile(os.path.join(input_dir, f)):
                 file_list.append(f)
+        
+        # 进度跟踪参数
+        global result
+        clear_result()  # 清空结果
+        result['current_task'] = "clear duplicate"
+        result["total_jobs"] = len(file_list)
+        result['processed'] = 0
 
         # 创建线程池（根据 CPU 核心数自动调整）
         with concurrent.futures.ThreadPoolExecutor(max_workers=CPU_workers) as executor:
@@ -225,6 +238,9 @@ def clear_duplicate(input_dir: str, CPU_workers: int = 1)-> dict:
                     future.result()
                 except Exception as e:
                     print(f"[clear duplicate] 处理异常: {str(e)}")
+                finally:    # 记录进度
+                    result['processed'] += 1
+                    result['current_job'] = file_list[result['processed'] - 1]
 
         end_time = time.time()
         return {
@@ -240,26 +256,41 @@ def clear_duplicate(input_dir: str, CPU_workers: int = 1)-> dict:
 
 def clear_cache(path: str)-> dict:
     """ 删除 cache 目录下的所有缓存文件夹和文件 (only JPEG and PNG) """
+    if not os.path.exists(path):
+        print(f"[clear cache] 目录不存在: {path}")
+        return None
+
     start_time = time.time()
     total_jobs = 0 # 总文件数
     total_size = 0  # 总文件大小（B）
+
+    # 进度跟踪参数
+    global result
+    clear_result()  # 清空结果
+    result['current_task'] = "clear cache"
+    result["total_jobs"] = len(os.listdir(path))
+    result['processed'] = 0
+
+    result['current_job'] = "remove cache files..."
 
     # 遍历根目录
     for root, dirs, files in os.walk(path):
         # 遍历根目录下的文件
         for file in files:
-            if file.endswith(".jpeg") or file.endswith(".jpg") or file.endswith(".png"):
-                file_path = os.path.join(root, file)
-
-                # 删除文件
-                try:
+            try:
+                if file.endswith(".jpeg") or file.endswith(".jpg") or file.endswith(".png"):
+                    # 删除文件
+                    file_path = os.path.join(root, file)
                     file_size = os.path.getsize(file_path)
                     os.remove(file_path)
+
                     total_jobs += 1
                     total_size += file_size
                     print(f"[clear cache] delete file: {file_path}")
-                except Exception as e:
-                    print(f"\n任务异常: {file_path}: {e}")
+            except Exception as e:
+                print(f"\n任务异常: {file_path}: {e}")
+            finally:    # 记录进度
+                result['processed'] += 1
     
     end_time = time.time()
     return {

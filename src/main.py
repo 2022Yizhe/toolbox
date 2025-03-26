@@ -317,12 +317,14 @@ class ToolboxApp:
             # 更新进度显示
             result = serv.get_result()
             if result is not None:
-                self.progressbar["value"] = result["progress"]
                 if result["total_jobs"] != 0:
-                    self.progress_label["text"] = f"{result['processed']}/{result['total_jobs']}"
+                    self.progressbar["value"] = result["processed"] / result["total_jobs"] * 100
+                if result["current_job"] != "":
+                    self.progress_label["text"] = f"[{result['current_task']}]"
+                if result["total_jobs"] != 0:
                     self.progress_detail_label["text"] = f"{result['processed']}/{result['total_jobs']}：{result['current_job']}"
             # 继续定期检查
-            self.master.after(100, lambda: self.check_progress(serv))  # 每 200 毫秒检查一次
+            self.master.after(100, lambda: self.check_progress(serv))  # 每 100 毫秒检查一次
 
 
     def filter_images_script(self):
@@ -349,6 +351,7 @@ class ToolboxApp:
 
         # 启动定期检查进度
         serv.set_processing()
+        self.progressbar["value"] = 0   # 清空进度条
         self.check_progress(serv)
 
     def merge_script(self):

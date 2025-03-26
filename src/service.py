@@ -4,6 +4,7 @@ import func.filter as filter
 import func.file as file
 
 import os
+import time 
 
 is_processing = False  # 标记任务是否在进行中
 
@@ -62,6 +63,7 @@ class Service:
         else:
             ...
         # 标记任务结束
+        time.sleep(0.2)         # 等待进度条更新 (避免最终进度条来不及更新)
         global is_processing 
         is_processing = False
     
