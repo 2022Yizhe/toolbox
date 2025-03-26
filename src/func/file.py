@@ -3,6 +3,8 @@
 import os   
 import shutil
 
+import func.enum as enum
+
 
 def list_files(dir: str):
     """
@@ -89,6 +91,21 @@ def merge_dirs(src1: str, src2: str, dst: str):
     :param src2: 第二个源文件夹目录
     :param dst: 合并到的目标文件夹目录
     """
+    # 统计文件数量
+    file_count = int(0)
+    for src in [src1, src2]:
+        for root, dirs, files in os.walk(src):
+            for f in files:
+                if os.path.isfile(os.path.join(root, f)):
+                    file_count += 1
+
+    # 进度跟踪参数
+    enum.clear_result()  # 清空结果
+
+    enum.set_total_jobs(file_count)
+    enum.set_processed(0)
+    print(f"当前任务数量:{file_count}")
+    
     try:
         # 统一处理所有源目录
         for src in [src1, src2]:
@@ -121,6 +138,10 @@ def merge_dirs(src1: str, src2: str, dst: str):
                     # 复制文件（保留元数据）
                     copy_1file(src_file, dst_file)
                     print(f"[merge] copy {src_file}\n          -> {dst_file}")
+
+                    # 记录进度
+                    enum.set_processed(enum.get_processed() + 1)
+                    enum.set_current_job(file)
     except Exception as e:
         print(f"[merge] error: {e}")
         raise e

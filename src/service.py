@@ -2,6 +2,7 @@
 
 import func.filter as filter
 import func.file as file
+import func.enum as enum
 
 import os
 import time 
@@ -18,7 +19,7 @@ class Service:
         return is_processing
 
     def get_result(self):
-        return filter.result
+        return enum.result
 
     def start_filter(self, image_source: str, cache: str, output: str, cpu_workers: str, conf: dict):
         """ 按格式和质量分类，查重，并删除重复文件 """
@@ -64,13 +65,18 @@ class Service:
             ...
         # 标记任务结束
         time.sleep(0.2)         # 等待进度条更新 (避免最终进度条来不及更新)
-        global is_processing 
+        global is_processing
         is_processing = False
     
 
     def start_merge(self, src1: str, src2: str, dst: str):
         """ 合并两个同构的文件夹 """
         file.merge_dirs(src1, src2, dst)
+
+        # 标记任务结束
+        time.sleep(0.2)         # 等待进度条更新 (避免最终进度条来不及更新)
+        global is_processing 
+        is_processing = False
 
 
     def start_extract(self, src: str, dst: str, target_dir: str|None):

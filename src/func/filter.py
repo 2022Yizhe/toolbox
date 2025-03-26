@@ -5,20 +5,7 @@ from PIL import Image
 import concurrent.futures
 import time
 
-
-result = {
-    "current_task": "",
-    "total_jobs": 0,
-    "processed": 0,
-    "current_job": "等待中"
-}
-
-def clear_result():
-    global result
-    result['current_task'] = ""
-    result['total_jobs'] = 0
-    result['processed'] = 0
-    result['current_job'] = "等待中"
+import func.enum as enum
 
 
 ##
@@ -77,11 +64,11 @@ def separate_mode(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
                 file_list.append(f)
         
         # 进度跟踪参数
-        clear_result()  # 清空结果
-        global result
-        result['current_task'] = "separate mode"
-        result["total_jobs"] = len(file_list)
-        result['processed'] = 0
+        enum.clear_result()  # 清空结果
+
+        enum.set_current_task("separate mode")
+        enum.set_total_jobs(len(file_list))
+        enum.set_processed(0)
 
         # 创建线程池（根据 CPU 核心数自动调整）
         with concurrent.futures.ThreadPoolExecutor(max_workers=CPU_workers) as executor:
@@ -95,8 +82,8 @@ def separate_mode(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
                 except Exception as e:
                     print(f"[separate mode] 处理异常: {str(e)}")
                 finally:    # 记录进度
-                    result['processed'] += 1
-                    result['current_job'] = file_list[result['processed'] - 1]
+                    enum.set_processed(enum.get_processed() + 1)
+                    enum.set_current_job(file_list[enum.get_processed() - 1])
             
         end_time = time.time()
         return {'cost_time': end_time - start_time}
@@ -150,11 +137,12 @@ def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1)-> di
                 file_list.append(f)
 
         # 进度跟踪参数
-        global result
-        clear_result()  # 清空结果
-        result['current_task'] = "separate quality"
-        result["total_jobs"] = len(file_list)
-        result['processed'] = 0
+
+        enum.clear_result()  # 清空结果
+
+        enum.set_current_task("separate quality")
+        enum.set_total_jobs(len(file_list))
+        enum.set_processed(0)
 
         # 创建线程池（根据 CPU 核心数自动调整）
         with concurrent.futures.ThreadPoolExecutor(max_workers=CPU_workers) as executor:
@@ -168,8 +156,8 @@ def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1)-> di
                 except Exception as e:
                     print(f"[separate quality] 处理异常: {str(e)}")
                 finally:    # 记录进度
-                    result['processed'] += 1
-                    result['current_job'] = file_list[result['processed'] - 1]
+                    enum.set_processed(enum.get_processed() + 1)
+                    enum.set_current_job(file_list[enum.get_processed() - 1])
 
         end_time = time.time()
         return {'cost_time': end_time - start_time}
@@ -210,7 +198,7 @@ def process_clear_duplicate(filename, input_dir):
 def clear_duplicate(input_dir: str, CPU_workers: int = 1)-> dict:
     """多线程图片查重主函数，使用文件哈希值校验"""
     try:
-        clear_result()
+        enum.clear_result()
         start_time = time.time()
         known_hashes.clear()
 
@@ -221,11 +209,11 @@ def clear_duplicate(input_dir: str, CPU_workers: int = 1)-> dict:
                 file_list.append(f)
         
         # 进度跟踪参数
-        global result
-        clear_result()  # 清空结果
-        result['current_task'] = "clear duplicate"
-        result["total_jobs"] = len(file_list)
-        result['processed'] = 0
+
+        enum.clear_result()  # 清空结果
+        enum.set_current_task("clear duplicate")
+        enum.set_total_jobs(len(file_list))
+        enum.set_processed(0)
 
         # 创建线程池（根据 CPU 核心数自动调整）
         with concurrent.futures.ThreadPoolExecutor(max_workers=CPU_workers) as executor:
@@ -239,8 +227,8 @@ def clear_duplicate(input_dir: str, CPU_workers: int = 1)-> dict:
                 except Exception as e:
                     print(f"[clear duplicate] 处理异常: {str(e)}")
                 finally:    # 记录进度
-                    result['processed'] += 1
-                    result['current_job'] = file_list[result['processed'] - 1]
+                    enum.set_processed(enum.get_processed() + 1)
+                    enum.set_current_job(file_list[enum.get_processed() - 1])
 
         end_time = time.time()
         return {
@@ -265,13 +253,13 @@ def clear_cache(path: str)-> dict:
     total_size = 0  # 总文件大小（B）
 
     # 进度跟踪参数
-    global result
-    clear_result()  # 清空结果
-    result['current_task'] = "clear cache"
-    result["total_jobs"] = len(os.listdir(path))
-    result['processed'] = 0
+    enum.clear_result()  # 清空结果
 
-    result['current_job'] = "remove cache files..."
+    enum.set_current_task("clear cache")
+    enum.set_total_jobs(len(os.listdir(path)))
+    enum.set_processed(0)
+
+    enum.set_current_job("remove cache files...")
 
     # 遍历根目录
     for root, dirs, files in os.walk(path):
@@ -290,7 +278,7 @@ def clear_cache(path: str)-> dict:
             except Exception as e:
                 print(f"\n任务异常: {file_path}: {e}")
             finally:    # 记录进度
-                result['processed'] += 1
+                enum.set_processed(enum.get_processed() + 1)
     
     end_time = time.time()
     return {

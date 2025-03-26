@@ -156,8 +156,8 @@ class ToolboxApp:
         self.check_clear_cache_var.grid(row=6, column=1, columnspan=1, pady=10)
 
         # 分类按钮 (监听点击分类操作，将参数传递给 filter_images_script)
-        self.filter_button = tk.Button(self.tab1, text="开始分类", command=self.filter_images_script)
-        self.filter_button.grid(row=7, column=0, padx=20, pady=20)
+        self.public_button = tk.Button(self.tab1, text="开始分类", command=self.filter_images_script)
+        self.public_button.grid(row=7, column=0, padx=20, pady=20)
 
         # 进度条
         self.progressbar = ttk.Progressbar(self.tab1, orient="horizontal", length=640, mode="determinate")
@@ -165,7 +165,7 @@ class ToolboxApp:
         self.progressbar["value"] = 0  # 初始化进度条为 0
 
         # 进度任务信息标签
-        self.progress_label = tk.Label(self.tab1, text="-/-")
+        self.progress_label = tk.Label(self.tab1, text="[-/-]")
         self.progress_label.grid(row=8, column=0, padx=10, pady=10)
 
         # 进度详细信息标签
@@ -199,8 +199,21 @@ class ToolboxApp:
             self.merge_entry.insert(0, conf["dst"])
 
         # 合并按钮 (监听点击合并操作，将参数传递给 merge_script)
-        self.filter_button = tk.Button(self.tab1, text="开始合并", command=self.merge_script)
-        self.filter_button.grid(row=4, column=0, columnspan=2, pady=20)
+        self.public_button = tk.Button(self.tab1, text="开始合并", command=self.merge_script)
+        self.public_button.grid(row=4, column=0, padx=20, pady=20)
+
+        # 进度条
+        self.progressbar = ttk.Progressbar(self.tab1, orient="horizontal", length=640, mode="determinate")
+        self.progressbar.grid(row=4, column=1, padx=20, pady=20)
+        self.progressbar["value"] = 0  # 初始化进度条为 0
+
+        # 进度任务信息标签
+        self.progress_label = tk.Label(self.tab1, text="")
+        self.progress_label.grid(row=5, column=0, padx=10, pady=10)
+
+        # 进度详细信息标签
+        self.progress_detail_label = tk.Label(self.tab1, text="没有正在进行的任务")
+        self.progress_detail_label.grid(row=5, column=1, padx=10, pady=10)
 
     def create_settings3_ui(self, conf):
         self.clear_settings_ui()
@@ -229,8 +242,8 @@ class ToolboxApp:
         tk.Label(self.tab1, text="（留空则不生成子文件夹）").grid(row=4, column=1, padx=20, pady=0)
 
         # 提取按钮 (监听点击提取操作，将参数传递给 extract_script)
-        self.filter_button = tk.Button(self.tab1, text="开始提取", command=self.extract_script)
-        self.filter_button.grid(row=5, column=0, columnspan=2, pady=20)
+        self.public_button = tk.Button(self.tab1, text="开始提取", command=self.extract_script)
+        self.public_button.grid(row=5, column=0, columnspan=2, pady=20)
 
     def create_settings4_ui(self, conf):
         self.clear_settings_ui()
@@ -252,8 +265,8 @@ class ToolboxApp:
         tk.Label(self.tab1, text="（1 表示只清除空文件夹，0 表示删除所有文件夹）").grid(row=3, column=1, padx=20, pady=0)
 
         # 清除按钮 (监听点击清除操作，将参数传递给 delete_script)
-        self.filter_button = tk.Button(self.tab1, text="开始删除", command=self.delete_script)
-        self.filter_button.grid(row=4, column=0, columnspan=2, pady=20)
+        self.public_button = tk.Button(self.tab1, text="开始删除", command=self.delete_script)
+        self.public_button.grid(row=4, column=0, columnspan=2, pady=20)
 
 
 
@@ -319,28 +332,19 @@ class ToolboxApp:
             if result is not None:
                 if result["total_jobs"] != 0:
                     self.progressbar["value"] = result["processed"] / result["total_jobs"] * 100
-                if result["current_job"] != "":
+                if result["current_task"] != "":
                     self.progress_label["text"] = f"[{result['current_task']}]"
                 if result["total_jobs"] != 0:
                     self.progress_detail_label["text"] = f"{result['processed']}/{result['total_jobs']}：{result['current_job']}"
             # 继续定期检查
             self.master.after(100, lambda: self.check_progress(serv))  # 每 100 毫秒检查一次
         else:
-            # 恢复按钮和样式
-            self.filter_button.config(
-                state=tk.NORMAL,
-                bg="#F5F5F5",   # light gray
-                relief=tk.RAISED
-            )
+            self.enable_button()    # 恢复按钮和样式
 
 
     def filter_images_script(self):
         # 禁用按钮并改变样式
-        self.filter_button.config(
-            state=tk.DISABLED,
-            bg="#EEEEEE",       # 禁用时背景色 dark gray
-            relief=tk.SUNKEN    # 凹陷效果
-        )
+        self.disable_button()
 
         # 获取组件值
         image_source = self.image_source_entry.get()
@@ -357,13 +361,7 @@ class ToolboxApp:
         # 检查是否所有参数都已输入
         if image_source == "" or mode_separated == "" or quality_filtered == "" or cpu_workers == "":
             messagebox.showerror("错误", "请输入所有参数！")
-            
-            # 恢复按钮和样式
-            self.filter_button.config(
-                state=tk.NORMAL,
-                bg="#F5F5F5",   # light gray
-                relief=tk.RAISED
-            )
+            self.enable_button()    # 恢复按钮和样式
             return
 
         # 开始一个新线程来执行过滤
@@ -376,6 +374,9 @@ class ToolboxApp:
         self.check_progress(serv)
 
     def merge_script(self):
+        # 禁用按钮并改变样式
+        self.disable_button()
+
         # 获取组件值
         src1 = self.source1_entry.get()
         src2 = self.source2_entry.get()
@@ -384,13 +385,24 @@ class ToolboxApp:
         # 检查是否所有参数都已输入
         if src1 == "" or src2 == "" or dst == "":
             messagebox.showerror("错误", "请输入所有参数！")
+            self.enable_button()    # 恢复按钮和样式
             return
 
         # 创建服务实例并调用方法
         serv = service.Service()
-        serv.start_merge(src1, src2, dst)
+        threading.Thread(target=serv.start_merge, args=(src1, src2, dst)).start()
+
+        # 启动定期检查进度
+        serv.set_processing()
+        self.progressbar["value"] = 0   # 清空进度条
+        self.check_progress(serv)
+        
+
 
     def extract_script(self):
+        # 禁用按钮并改变样式
+        self.disable_button()
+
         # 获取组件值
         src = self.source_entry.get()
         dst = self.extract_entry.get()
@@ -399,6 +411,7 @@ class ToolboxApp:
         # 检查是否所有参数都已输入
         if src == "" or dst == "":
             messagebox.showerror("错误", "请输入所有参数！")
+            self.enable_button()    # 恢复按钮和样式
             return
 
         if target_dir == "":
@@ -409,6 +422,9 @@ class ToolboxApp:
         serv.start_extract(src, dst, target_dir)
 
     def delete_script(self):
+        # 禁用按钮并改变样式
+        self.disable_button()
+
         # 获取组件值
         target = self.target_entry.get()
         only_empty = self.only_empty_entry.get()
@@ -416,11 +432,29 @@ class ToolboxApp:
         # 检查是否所有参数都已输入
         if target == "":
             messagebox.showerror("错误", "请输入所有参数！")
+            self.enable_button()    # 恢复按钮和样式
             return
 
         # 创建服务实例并调用方法
         serv = service.Service()
         serv.start_delete(target, only_empty)
+
+    def disable_button(self):
+        # 禁用按钮并改变样式
+        self.public_button.config(
+            state=tk.DISABLED,
+            bg="#EEEEEE",       # 禁用时背景色 dark gray
+            relief=tk.SUNKEN    # 凹陷效果
+        )
+
+    def enable_button(self):
+        # 恢复按钮和样式
+        self.public_button.config(
+            state=tk.NORMAL,
+            bg="#F5F5F5",   # light gray
+            relief=tk.RAISED
+        )
+
 
 # ==============================================================================================
 
