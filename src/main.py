@@ -325,9 +325,23 @@ class ToolboxApp:
                     self.progress_detail_label["text"] = f"{result['processed']}/{result['total_jobs']}：{result['current_job']}"
             # 继续定期检查
             self.master.after(100, lambda: self.check_progress(serv))  # 每 100 毫秒检查一次
+        else:
+            # 恢复按钮和样式
+            self.filter_button.config(
+                state=tk.NORMAL,
+                bg="#F5F5F5",   # light gray
+                relief=tk.RAISED
+            )
 
 
     def filter_images_script(self):
+        # 禁用按钮并改变样式
+        self.filter_button.config(
+            state=tk.DISABLED,
+            bg="#EEEEEE",       # 禁用时背景色 dark gray
+            relief=tk.SUNKEN    # 凹陷效果
+        )
+
         # 获取组件值
         image_source = self.image_source_entry.get()
         mode_separated = self.mode_separated_entry.get()
@@ -343,6 +357,13 @@ class ToolboxApp:
         # 检查是否所有参数都已输入
         if image_source == "" or mode_separated == "" or quality_filtered == "" or cpu_workers == "":
             messagebox.showerror("错误", "请输入所有参数！")
+            
+            # 恢复按钮和样式
+            self.filter_button.config(
+                state=tk.NORMAL,
+                bg="#F5F5F5",   # light gray
+                relief=tk.RAISED
+            )
             return
 
         # 开始一个新线程来执行过滤
