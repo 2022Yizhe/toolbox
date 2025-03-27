@@ -96,7 +96,7 @@ def separate_mode(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
 # =========================================================================
 
 
-def process_separate_quality(filename, input_dir, output_dir):
+def process_separate_quality(filename: str, input_dir:str, output_dir:str, quality_boundary:int):
     """处理单个图片质量的线程函数"""
     try:
         img_path = os.path.join(input_dir, filename)
@@ -110,7 +110,7 @@ def process_separate_quality(filename, input_dir, output_dir):
             print(f"[separate quality] 当前 {filename}: {size_in_KB}KB, 格式: {img.format}")
 
             # 根据质量创建输出目录
-            output_subdir = "QUALITY" if size_in_KB >= 500 else "LOW"
+            output_subdir = "QUALITY" if size_in_KB >= quality_boundary else "LOW"
             output_path = os.path.join(output_dir, output_subdir)
             os.makedirs(output_path, exist_ok=True)
 
@@ -125,7 +125,7 @@ def process_separate_quality(filename, input_dir, output_dir):
     except Exception as e:
         print(f"[separate quality] 处理 {filename} 时出错: {str(e)}")
 
-def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
+def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1, quality_boundary: int = 500)-> dict:
     """多线程图片按质量分离主函数"""
     try:
         start_time = time.time()
@@ -147,7 +147,7 @@ def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1)-> di
         # 创建线程池（根据 CPU 核心数自动调整）
         with concurrent.futures.ThreadPoolExecutor(max_workers=CPU_workers) as executor:
             # 提交所有处理任务
-            futures = [executor.submit(process_separate_quality, f, input_dir, output_dir) for f in file_list]
+            futures = [executor.submit(process_separate_quality, f, input_dir, output_dir, quality_boundary) for f in file_list]
             
             # 显示进度（可选）
             for future in concurrent.futures.as_completed(futures):

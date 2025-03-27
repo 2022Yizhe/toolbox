@@ -36,6 +36,8 @@ class Service:
         cls_duplicate = conf['cls_duplicate']
         cls_cache = conf['cls_cache']
 
+        quality_boundary = int(conf['quality_boundary'])
+
         # 规划任务流程
         last = False
         if by_mode:         # 按模式分类
@@ -51,10 +53,10 @@ class Service:
                         filter.clear_duplicate(os.path.join(root, dir), cpu_workers)
         if by_quality:      # 按质量分类
             if last:
-                filter.separate_quality(cache+"\\JPEG", output+"\\JPEG", cpu_workers)
-                filter.separate_quality(cache+"\\PNG", output+"\\PNG", cpu_workers)
+                filter.separate_quality(cache+"\\JPEG", output+"\\JPEG", cpu_workers, quality_boundary)
+                filter.separate_quality(cache+"\\PNG", output+"\\PNG", cpu_workers, quality_boundary)
             else:
-                filter.separate_quality(cache+"\\tmp", output, cpu_workers)
+                filter.separate_quality(cache+"\\tmp", output, cpu_workers, quality_boundary)
         else:
             if last:
                 file.move_files(cache+"\\JPEG", output+"\\JPEG", None)
