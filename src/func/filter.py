@@ -182,10 +182,15 @@ hash_lock = Lock()
 known_hashes = set()  # 使用集合提升查询效率
 
 def process_clear_duplicate(filename, input_dir):
+    """处理单个图片查重的线程函数"""
     try:
+        # 计算文件哈希值
         file_path = os.path.join(input_dir, filename)
         file_hash = calculate_hash(file_path)
+
+        # 使用锁保护对共享资源的访问
         with hash_lock:
+            # 检查哈希值是否已存在
             if file_hash in known_hashes:
                 os.remove(file_path)
                 print(f"[clear duplicate] {filename}")

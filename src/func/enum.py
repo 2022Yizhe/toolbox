@@ -1,3 +1,5 @@
+# x. 工具类的共享资源（全局变量）
+
 result = {
     "current_task": "",
     "total_jobs": 0,

@@ -48,7 +48,7 @@ class Service:
             for root, dirs, files in os.walk(cache):
                 if dirs:
                     for dir in dirs:
-                        filter.clear_duplicate(os.path.join(root, dir))
+                        filter.clear_duplicate(os.path.join(root, dir), cpu_workers)
         if by_quality:      # 按质量分类
             if last:
                 filter.separate_quality(cache+"\\JPEG", output+"\\JPEG", cpu_workers)
