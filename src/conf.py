@@ -13,6 +13,9 @@ def get_installation_path():
     
     return installation_path
 
+def get_cpu_workers():
+    return os.cpu_count()
+
 root = get_installation_path()
 cache = os.path.join(root, ".cache")
 

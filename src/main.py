@@ -5,8 +5,9 @@ from tkinter import ttk
 from tkinter import messagebox
 import threading
 
+
 import service as service
-import conf as conf
+import conf as dconf
 
 
 class ToolboxApp:
@@ -88,7 +89,7 @@ class ToolboxApp:
         self.notebook.add(self.tab1, text="参数设置")
 
         # 初始化显示第一个工具的配置参数
-        self.create_settings1_ui(conf.script1_conf)
+        self.create_settings1_ui(dconf.script1_conf)
         
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
@@ -122,7 +123,7 @@ class ToolboxApp:
             self.quality_filtered_entry.insert(0, conf["quality_filtered"])
 
         # CPU 工作数量
-        tk.Label(self.tab1, text="CPU 工作数量:").grid(row=4, column=0, padx=20, pady=10)
+        tk.Label(self.tab1, text=f"CPU 工作数量 ({dconf.get_cpu_workers()})").grid(row=4, column=0, padx=20, pady=10)
         self.cpu_workers_entry = tk.Entry(self.tab1, width=60)
         self.cpu_workers_entry.grid(row=4, column=1, padx=20, pady=10)
         if conf["CPU_workers"] is not None:
@@ -301,8 +302,9 @@ class ToolboxApp:
 
     def show_suggestion(self):
         # 显示建议信息
-        suggestion_text = "1.请每次仅使用一项工具，多工具任务并行未经稳定性测试；\n" \
-        "2.请合理设置 CPU 参数，全核心并行对主机散热稳定性要求较高。\n"\
+        suggestion_text = "1. 请每次仅使用一项工具，多工具任务并行未经稳定性测试；\n" \
+        "2. 请合理设置 CPU 参数，全核心并行对主机散热稳定性要求较高。\n"\
+        "\n注：本工具不会对源路径下的文件造成任何损坏，其原理是先复制到 .cache 目录下，再进行处理。\n" \
         "\n如果您在使用过程中遇到任何问题，或者有任何建议或意见，请随时联系。项目地址：\n" \
         "https://github.com/2022Yizhe/toolbox.git\n"
         messagebox.showinfo("使用建议", suggestion_text)
@@ -313,25 +315,25 @@ class ToolboxApp:
         self.status_bar.config(text=" 当前工具: 图像文件分类")
 
         # 添加标签和文本框
-        self.create_settings1_ui(conf.script1_conf)
+        self.create_settings1_ui(dconf.script1_conf)
 
     def display_script2(self):
         self.status_bar.config(text=" 当前工具: 同构目录合并")
         
         # 添加标签和文本框
-        self.create_settings2_ui(conf.script2_conf)
+        self.create_settings2_ui(dconf.script2_conf)
 
     def display_script3(self):
         self.status_bar.config(text=" 当前工具: 文件提取")
 
         # 添加标签和文本框
-        self.create_settings3_ui(conf.script3_conf)
+        self.create_settings3_ui(dconf.script3_conf)
 
     def display_script4(self):
         self.status_bar.config(text=" 当前工具: 目录删除")
         
         # 添加标签和文本框
-        self.create_settings4_ui(conf.script4_conf)
+        self.create_settings4_ui(dconf.script4_conf)
 
 
     def check_progress(self, serv: service.Service):
