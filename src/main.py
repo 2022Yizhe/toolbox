@@ -6,12 +6,13 @@ from tkinter import messagebox
 import threading
 
 import service as service
+import conf as conf
 
 
 class ToolboxApp:
     def __init__(self, master):
         self.master = master
-        master.title("Python 工具箱")
+        master.title("Python 图像处理工具箱")
         
         # 先设置初始尺寸（但不设置位置）
         master.geometry("900x600")  # 仅设置尺寸
@@ -86,13 +87,7 @@ class ToolboxApp:
         self.notebook.add(self.tab1, text="参数设置")
 
         # 初始化显示第一个工具的配置参数
-        conf = { 
-            "image_source": None,
-            'mode_separated': "E:\\Microsoft VS Code SRC\\python\\toolbox\\.cache\\filter",
-            'quality_filtered': "E:\\Microsoft VS Code SRC\\python\\toolbox\\filter",
-            'CPU_workers': 1
-        }
-        self.create_settings1_ui(conf)
+        self.create_settings1_ui(conf.script1_conf)
         
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
@@ -101,7 +96,7 @@ class ToolboxApp:
         for widget in self.tab1.winfo_children():
             widget.destroy()
 
-    def create_settings1_ui(self, conf):
+    def create_settings1_ui(self, conf: dict):
         self.clear_settings_ui()
 
         # 图像源
@@ -307,50 +302,28 @@ class ToolboxApp:
     # 展示脚本 1 布局
     def display_script1(self):
         self.status_bar.config(text=" 当前工具: 图像文件分类")
-        conf = {    # 初始默认配置参数
-            "image_source": None,
-            'mode_separated': "E:\\Microsoft VS Code SRC\\python\\toolbox\\.cache\\filter",
-            'quality_filtered': "E:\\Microsoft VS Code SRC\\python\\toolbox\\filter",
-            'CPU_workers': 1
-        }
+
         # 添加标签和文本框
-        self.create_settings1_ui(conf)
+        self.create_settings1_ui(conf.script1_conf)
 
     def display_script2(self):
         self.status_bar.config(text=" 当前工具: 同构目录合并")
         
-        conf = {    # 初始默认配置参数
-            'src1': None,
-            'src2': None,
-            'dst': "E:\\Microsoft VS Code SRC\\python\\toolbox\\merge",
-        }
         # 添加标签和文本框
-        self.create_settings2_ui(conf)
+        self.create_settings2_ui(conf.script2_conf)
 
     def display_script3(self):
         self.status_bar.config(text=" 当前工具: 文件提取")
 
-        conf = {    # 初始默认配置参数
-            'src': None,
-            'dst': "E:\\Microsoft VS Code SRC\\python\\toolbox\\extract",
-            'target_dir': None
-        }
         # 添加标签和文本框
-        self.create_settings3_ui(conf)
+        self.create_settings3_ui(conf.script3_conf)
 
     def display_script4(self):
         self.status_bar.config(text=" 当前工具: 目录删除")
         
-        conf = {    # 初始默认配置参数
-            'target': None,
-            'only_empty': True
-        }
         # 添加标签和文本框
-        self.create_settings4_ui(conf)
+        self.create_settings4_ui(conf.script4_conf)
 
-
-    def refresh(self):
-        self.status_bar.config(text=" 已重置默认参数")
 
     def check_progress(self, serv: service.Service):
         if serv.get_processing():
