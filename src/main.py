@@ -282,7 +282,12 @@ class ToolboxApp:
 
     def show_help(self):
         # 显示帮助信息
-        help_text = "这是一个由 yizhe2022 开发的 Python 工具箱。\n\n这里集成了一些工具和功能，\n\n希望对您能有所帮助！"
+        help_text = "这是一个由 yizhe2022 开发的 Python 工具箱，集成了一些工具和功能。\n"\
+        "图像文件分类：按照图像格式（例如 JPG、PNG）、图像大小（例如以 500KB 为分界）将图像归类，同时进行图像去重（文件哈希值比对）。\n" \
+        "同构目录合并：将两个目录合并为一个目录。\n" \
+        "文件提取：将一个目录中的所有文件（例如 TXT、DOCX、PPT、RAR、JPG 等）向上提取到一个目录下。\n" \
+        "目录删除：删除一个目录下所有内容，可选择只查找空的文件夹并进行删除。\n" \
+        "希望对您能有所帮助！"
         messagebox.showinfo("帮助", help_text)
         self.status_bar.config(text=" 显示帮助信息")
 
