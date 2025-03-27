@@ -367,17 +367,20 @@ class ToolboxApp:
         quality_filtered = self.quality_filtered_entry.get()
         cpu_workers = self.cpu_workers_entry.get()
 
+        by_quality = self.option2_var.get()
+        quality_boundary = self.quality_entry.get()
+
         conf = {
             'by_mode': self.option1_var.get(),  # 获取复选框值
-            'by_quality': self.option2_var.get(),
+            'by_quality': by_quality,
             'cls_duplicate': self.option3_var.get(),
             'cls_cache': self.option4_var.get(),
 
-            'quality_boundary': self.quality_entry.get()
+            'quality_boundary': quality_boundary
         }
 
         # 检查是否所有参数都已输入
-        if image_source == "" or mode_separated == "" or quality_filtered == "" or cpu_workers == "":
+        if image_source == "" or mode_separated == "" or quality_filtered == "" or cpu_workers == "" or (quality_boundary == "" and by_quality == 1):
             messagebox.showerror("错误", "请输入所有参数！")
             self.enable_button()    # 恢复按钮和样式
             return
