@@ -253,8 +253,12 @@ def delete_dirs(target: str, only_empty = True):
                     else:
                         print(f"[delete] skip: {dir_path}")
                 else:
-                    os.rmdir(dir_path)
-                    print(f"[delete] all: {dir_path}")
+                    # 递归删除目录及其内容
+                    try:
+                        shutil.rmtree(dir_path)
+                        print(f"[delete] all: {dir_path}")
+                    except Exception as e:
+                        print(f"删除目录时出错: {e}")
 
                 # 记录进度
                 enum.set_processed(enum.get_processed() + 1)
