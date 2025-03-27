@@ -20,6 +20,12 @@ class Service:
 
     def get_result(self):
         return enum.result
+    
+    def stop_processing(self):
+        # 标记任务结束
+        time.sleep(0.2)         # 等待进度条更新 (避免最终进度条来不及更新)
+        global is_processing
+        is_processing = False
 
     def start_filter(self, image_source: str, cache: str, output: str, cpu_workers: str, conf: dict):
         """ 按格式和质量分类，查重，并删除重复文件 """
@@ -64,9 +70,7 @@ class Service:
         else:
             ...
         # 标记任务结束
-        time.sleep(0.2)         # 等待进度条更新 (避免最终进度条来不及更新)
-        global is_processing
-        is_processing = False
+        self.stop_processing()
     
 
     def start_merge(self, src1: str, src2: str, dst: str):
@@ -74,14 +78,15 @@ class Service:
         file.merge_dirs(src1, src2, dst)
 
         # 标记任务结束
-        time.sleep(0.2)         # 等待进度条更新 (避免最终进度条来不及更新)
-        global is_processing 
-        is_processing = False
+        self.stop_processing()
 
 
     def start_extract(self, src: str, dst: str, target_dir: str|None):
         """ 提取文件树中的所有文件，并移动到目标路径下 """
         file.extract_files(src, dst, target_dir)
+
+        # 标记任务结束
+        self.stop_processing()
     
 
     def start_delete(self, target: str, only_empty: str):

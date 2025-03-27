@@ -76,10 +76,7 @@ class ToolboxApp:
 
         # 分隔符
         ttk.Separator(toolbar, orient=tk.VERTICAL).pack(side=tk.LEFT, padx=5, fill=tk.Y)
-
-        self.refresh_btn = ttk.Button(toolbar, text="重置默认参数", command=self.refresh)
-        self.refresh_btn.pack(side=tk.LEFT)
-
+        
     def create_main_content(self):
         # 主内容区域使用 Notebook（标签页）
         self.notebook = ttk.Notebook(self.master)
@@ -243,7 +240,20 @@ class ToolboxApp:
 
         # 提取按钮 (监听点击提取操作，将参数传递给 extract_script)
         self.public_button = tk.Button(self.tab1, text="开始提取", command=self.extract_script)
-        self.public_button.grid(row=5, column=0, columnspan=2, pady=20)
+        self.public_button.grid(row=4, column=0, padx=20, pady=20)
+
+        # 进度条
+        self.progressbar = ttk.Progressbar(self.tab1, orient="horizontal", length=640, mode="determinate")
+        self.progressbar.grid(row=4, column=1, padx=20, pady=20)
+        self.progressbar["value"] = 0  # 初始化进度条为 0
+
+        # 进度任务信息标签
+        self.progress_label = tk.Label(self.tab1, text="")
+        self.progress_label.grid(row=5, column=0, padx=10, pady=10)
+
+        # 进度详细信息标签
+        self.progress_detail_label = tk.Label(self.tab1, text="没有正在进行的任务")
+        self.progress_detail_label.grid(row=5, column=1, padx=10, pady=10)
 
     def create_settings4_ui(self, conf):
         self.clear_settings_ui()
@@ -419,7 +429,12 @@ class ToolboxApp:
 
         # 创建服务实例并调用方法
         serv = service.Service()
-        serv.start_extract(src, dst, target_dir)
+        threading.Thread(target=serv.start_extract, args=(src, dst, target_dir)).start()
+
+        # 启动定期检查进度
+        serv.set_processing()
+        self.progressbar["value"] = 0   # 清空进度条
+        self.check_progress(serv)        
 
     def delete_script(self):
         # 禁用按钮并改变样式

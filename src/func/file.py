@@ -79,8 +79,8 @@ def copy_tree(src: str, dst: str, target_dir: str|None):
 # To use this script, you need to offer the following configuration:
 ##
 example_config = {
-    "src1": "C:\\Users\\Pictures\\2025-0312-0313",
-    "src2": "C:\\Users\\Pictures\\2025-0314-0315",
+    "src1": "path\\to\\images_dir1",
+    "src2": "path\\to\\images_dir2",
     "dst": "path\\to\\merge"
 }
 
@@ -91,22 +91,22 @@ def merge_dirs(src1: str, src2: str, dst: str):
     :param src2: 第二个源文件夹目录
     :param dst: 合并到的目标文件夹目录
     """
-    # 统计文件数量
-    file_count = int(0)
-    for src in [src1, src2]:
-        for root, dirs, files in os.walk(src):
-            for f in files:
-                if os.path.isfile(os.path.join(root, f)):
-                    file_count += 1
-
-    # 进度跟踪参数
-    enum.clear_result()  # 清空结果
-
-    enum.set_total_jobs(file_count)
-    enum.set_processed(0)
-    print(f"当前任务数量:{file_count}")
-    
     try:
+        # 统计文件数量
+        file_count = int(0)
+        for src in [src1, src2]:
+            for root, dirs, files in os.walk(src):
+                for f in files:
+                    if os.path.isfile(os.path.join(root, f)):
+                        file_count += 1
+
+        # 进度跟踪参数
+        enum.clear_result()  # 清空结果
+
+        enum.set_total_jobs(file_count)
+        enum.set_processed(0)
+        print(f"当前任务数量:{file_count}")
+
         # 统一处理所有源目录
         for src in [src1, src2]:
             for root, dirs, files in os.walk(src):
@@ -151,9 +151,9 @@ def merge_dirs(src1: str, src2: str, dst: str):
 # To use this script, you need to offer the following configuration:
 ##
 example_config = {
-    "src1": "C:\\Users\\Pictures\\2025-0312-0313",
-    "dst": "path\\to\\extracted",
-    "target_dir": "2025-0312-0313"
+    "src1": "path\\to\\images_dir",
+    "dst": "path\\to\\extract",
+    "target_dir": "2025-03"
 }
 
 def extract_files(src: str, dst: str, target_dir: str|None):
@@ -164,9 +164,24 @@ def extract_files(src: str, dst: str, target_dir: str|None):
     :param target_dir: 创建的子级文件夹名称
     """
     try:
+        # 统计文件数量
+        file_count = int(0)
+        for root, dirs, files in os.walk(src):
+            for f in files:
+                if os.path.isfile(os.path.join(root, f)):
+                    file_count += 1
+
+        # 进度跟踪参数
+        enum.clear_result()  # 清空结果
+
+        enum.set_total_jobs(file_count)
+        enum.set_processed(0)
+        print(f"当前任务数量:{file_count}")
+
         for root, dirs, files in os.walk(src):
             for file in files:
                 # 创建目标目录, 根据 target_dir 是否为 None 来决定创建子级目录
+                dst_path = dst
                 if target_dir is not None:
                     dst_path = os.path.join(dst, target_dir)
 
@@ -188,8 +203,12 @@ def extract_files(src: str, dst: str, target_dir: str|None):
                     dst_path = os.path.join(dst_path, file)
 
                 # 复制文件（保留元数据）
-                move_files(src_file, dst_path, None)
+                copy_1file(src_file, dst_path)
                 print(f"[extract] move {src_file}\n             -> {dst_path}")
+
+                # 记录进度
+                enum.set_processed(enum.get_processed() + 1)
+                enum.set_current_job(file)
     except Exception as e:
         print(f"[extract] error: {e}")
         raise e
@@ -207,7 +226,7 @@ def delete_dirs(target: str, only_empty = True):
     """
     删除空目录
     :param target: 目录路径
-    :param only_empty: 是否只删除空目录
+    :param only_empty: 是否只删除目录下的空文件夹
     """
     try:
         for root, dirs, files in os.walk(target, topdown=False):
