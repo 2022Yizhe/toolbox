@@ -224,11 +224,25 @@ example_config = {
 
 def delete_dirs(target: str, only_empty = True):
     """
-    删除空目录
+    删除目录下文件夹
     :param target: 目录路径
     :param only_empty: 是否只删除目录下的空文件夹
     """
-    try:
+    try:    
+        # 统计文件夹数量
+        file_count = int(0)
+        for root, dirs, files in os.walk(target):
+            for d in dirs:
+                if os.path.isdir(os.path.join(root, d)):
+                    file_count += 1
+
+        # 进度跟踪参数
+        enum.clear_result()  # 清空结果
+
+        enum.set_total_jobs(file_count)
+        enum.set_processed(0)
+        print(f"当前任务数量:{file_count}")
+
         for root, dirs, files in os.walk(target, topdown=False):
             for dir in dirs:
                 dir_path = os.path.join(root, dir)
@@ -236,9 +250,15 @@ def delete_dirs(target: str, only_empty = True):
                     if len(os.listdir(dir_path)) == 0:
                         os.rmdir(dir_path)
                         print(f"[delete] empty: {dir_path}")
+                    else:
+                        print(f"[delete] skip: {dir_path}")
                 else:
                     os.rmdir(dir_path)
                     print(f"[delete] all: {dir_path}")
+
+                # 记录进度
+                enum.set_processed(enum.get_processed() + 1)
+                enum.set_current_job(dir)
     except Exception as e:
         print(f"[delete] error: {e}")
         raise e

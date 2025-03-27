@@ -93,3 +93,6 @@ class Service:
         """ 删除指定目录下的文件，当 only_empty 为 1 时，只删除空文件夹 """
         oe = True if only_empty == "1" else False
         file.delete_dirs(target, oe)
+
+        # 标记任务结束
+        self.stop_processing()
