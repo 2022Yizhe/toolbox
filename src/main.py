@@ -12,7 +12,7 @@ import conf as conf
 class ToolboxApp:
     def __init__(self, master):
         self.master = master
-        master.title("Python 图像处理工具箱")
+        master.title("Python 图像文件工具箱")
         
         # 先设置初始尺寸（但不设置位置）
         master.geometry("900x600")  # 仅设置尺寸
@@ -53,6 +53,7 @@ class ToolboxApp:
         # 帮助菜单
         help_menu = tk.Menu(menubar, tearoff=0)
         help_menu.add_command(label="关于", command=self.show_help)
+        help_menu.add_command(label="使用建议", command=self.show_suggestion)
         menubar.add_cascade(label="帮助", menu=help_menu)
 
         self.master.config(menu=menubar)
@@ -289,7 +290,7 @@ class ToolboxApp:
 
     def show_help(self):
         # 显示帮助信息
-        help_text = "这是一个由 yizhe2022 开发的 Python 工具箱，集成了一些工具和功能。\n"\
+        help_text = "这是一个由 yizhe2022 开发的 Python 图像文件工具箱，集成了一些工具和功能。\n"\
         "图像文件分类：按照图像格式（例如 JPG、PNG）、图像大小（例如以 500KB 为分界）将图像归类，同时进行图像去重（文件哈希值比对）。\n" \
         "同构目录合并：将两个目录合并为一个目录。\n" \
         "文件提取：将一个目录中的所有文件（例如 TXT、DOCX、PPT、RAR、JPG 等）向上提取到一个目录下。\n" \
@@ -298,6 +299,14 @@ class ToolboxApp:
         messagebox.showinfo("帮助", help_text)
         self.status_bar.config(text=" 显示帮助信息")
 
+    def show_suggestion(self):
+        # 显示建议信息
+        suggestion_text = "1.请每次仅使用一项工具，多工具任务并行未经稳定性测试；\n" \
+        "2.请合理设置 CPU 参数，全核心并行对主机散热稳定性要求较高。\n"\
+        "\n如果您在使用过程中遇到任何问题，或者有任何建议或意见，请随时联系。项目地址：\n" \
+        "https://github.com/2022Yizhe/toolbox.git\n"
+        messagebox.showinfo("使用建议", suggestion_text)
+        self.status_bar.config(text=" 显示建议信息")
 
     # 展示脚本 1 布局
     def display_script1(self):
