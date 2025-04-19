@@ -4,6 +4,7 @@ import os
 from PIL import Image
 import concurrent.futures
 import time
+import shutil
 
 import func.enum as enum
 
@@ -17,45 +18,70 @@ example_config = {
     'CPU_workers': 6
 }
 
-def process_format(filename, input_dir, output_dir):
-    """处理单个图片格式的线程函数"""
+# 提高像素限制（按需调整数值）
+Image.MAX_IMAGE_PIXELS = 200000000
+
+def process_format(imgPath: str, outDir: str, filename: str):
+    """根据输入图像的透明通道进行格式转换 (JPEG/PNG)，并且尽可能保证图像的最大质量"""
     try:
-        img_path = os.path.join(input_dir, filename)
-        with Image.open(img_path) as img:
-            # 强制加载图片数据以验证完整性
-            img.load()
-            
-            # 获取文件信息
-            file_size = os.path.getsize(img_path)
-            print(f"[separate mode] 当前 {filename}: {int(file_size/1024)}KB, 格式: {img.format}")
+        with Image.open(imgPath) as img:
+            img.load()  # 延迟加载图像，确保每个线程都拥有完整的图像数据副本
+
+            imgFormat = "1"
+            imgSuffix = ".1"
+            filename = os.path.splitext(filename)[0]   #  清除原图像可能不正确的后缀
+
+            # 检查图像是否有透明通道，或者是否采用无损格式（PNG），然后进行格式转换
+            if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+                imgFormat = 'PNG'           # 转换为 PNG 格式
+                imgSuffix = '.png'
+            else:
+                img = img.convert('RGB')    # 一律转换为 RGB 模式
+                imgFormat = 'JPEG'          # 转换为 JPEG 格式
+                imgSuffix = '.jpg'
 
             # 根据格式创建输出目录
-            output_subdir = img.format.upper() if img.format else "UNKNOWN"
-            output_path = os.path.join(output_dir, output_subdir)
-            os.makedirs(output_path, exist_ok=True)
+            outDir = os.path.join(outDir, imgFormat)
+            os.makedirs(outDir, exist_ok=True)
 
-            # 获取目标格式并检查是否支持透明通道
-            if img.mode == 'RGBA':
-                target_format = img.format.upper() if img.format else ''
-                if target_format in ['JPEG', 'JPG', 'BMP']:  # 不支持Alpha的格式列表
-                    img = img.convert('RGB')
+            # 添加文件名和后缀
+            outPath = os.path.join(outDir, filename)
+            outPath = f"{outPath}{imgSuffix}"
 
-            # 显式指定格式, 保存到对应目录
-            img.save(
-                os.path.join(output_path, filename),
-                format=img.format,  # 确保按原始格式保存
-                quality=100,        # 可选：设置 JPEG 质量参数
-                **img.info          # 保留原始元数据
-            )
-            print(f"[separate mode] 完成 {filename} 已保存到 {output_subdir}/")
+            # 准备保存参数
+            save_args = {}
+            if imgFormat == 'JPEG':
+                # JPEG 优化参数
+                save_args.update({
+                    'quality': 95,                # 平衡质量与体积
+                    'subsampling': 2,             # 启用子采样（4:2:0）
+                    'progressive': True           # 启用渐进式编码
+                })
+                # 保留支持的元数据
+                allowed_params = {'dpi', 'icc_profile'}
+                save_args.update({k: v for k, v in img.info.items() if k in allowed_params})
+            else:
+                # PNG 优化参数
+                save_args.update({
+                    'compress_level': 9,       # 最高压缩级别
+                    'optimize': True,          # 启用过滤优化
+                    'bits': img.bits if hasattr(img, 'bits') else 8  # 保留色深
+                })
+                # 保留支持的元数据
+                allowed_meta = {'dpi', 'icc_profile', 'compress_level'}
+                save_args.update({k: v for k, v in img.info.items() if k in allowed_meta})
+            img.save(outPath, format=imgFormat, **save_args)
+            
+            # print(f"[Format] Converted {imgPath} -> {outPath}")
     except Exception as e:
-        print(f"[separate mode] 处理 {filename} 时出错: {str(e)}")
+        print(f"[Format] Error Converting {filename}: {str(e)}")
 
 
 def separate_mode(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
     """多线程图片按格式分离主函数"""
     try:
         start_time = time.time()
+        print(f"\n[separate mode] 开始分离图片（按格式）: {input_dir}")
         
         # 获取所有文件，保存为列表
         file_list = []
@@ -72,8 +98,12 @@ def separate_mode(input_dir: str, output_dir: str, CPU_workers: int = 1)-> dict:
 
         # 创建线程池（根据 CPU 核心数自动调整）
         with concurrent.futures.ThreadPoolExecutor(max_workers=CPU_workers) as executor:
-            # 提交所有处理任务
-            futures = [executor.submit(process_format, f, input_dir, output_dir) for f in file_list]
+            # 提交所有处理任务 (将列表推导式改为常规的循环)
+            futures = []
+            for f in file_list:
+                imgPath = os.path.join(input_dir, f)
+                future = executor.submit(process_format, imgPath, output_dir, f)
+                futures.append(future)
             
             # 显示进度
             for future in concurrent.futures.as_completed(futures):
@@ -100,35 +130,29 @@ def process_separate_quality(filename: str, input_dir:str, output_dir:str, quali
     """处理单个图片质量的线程函数"""
     try:
         img_path = os.path.join(input_dir, filename)
-        with Image.open(img_path) as img:
-            # 强制加载图片数据以验证完整性
-            img.load()
 
-            # 获取文件信息
-            file_size = os.path.getsize(img_path)
-            size_in_KB = int(file_size/1024)
-            print(f"[separate quality] 当前 {filename}: {size_in_KB}KB, 格式: {img.format}")
+        # 获取图像体积
+        file_size = os.path.getsize(img_path)
+        size_in_KB = int(file_size/1024)
 
-            # 根据质量创建输出目录
-            output_subdir = "QUALITY" if size_in_KB >= quality_boundary else "LOW"
-            output_path = os.path.join(output_dir, output_subdir)
-            os.makedirs(output_path, exist_ok=True)
+        # 根据质量创建输出目录
+        output_subdir = "QUALITY" if size_in_KB >= quality_boundary else "LOW"
+        output_path = os.path.join(output_dir, output_subdir)
+        os.makedirs(output_path, exist_ok=True)
 
-            # 显式指定格式, 保存到对应目录
-            img.save(
-                os.path.join(output_path, filename),
-                format=img.format,  # 确保按原始格式保存
-                quality=100,         # 可选：设置 JPEG 质量参数
-                **img.info          # 保留原始元数据 
-            )
-            print(f"[separate quality] 完成 {filename} 已保存到 {output_subdir}/")
+        # 移动图像到对应目录
+        shutil.move(img_path, os.path.join(output_path, filename))
+
+        # print(f"[separate quality] 完成 {filename} 已移动到 {output_subdir}/")
     except Exception as e:
         print(f"[separate quality] 处理 {filename} 时出错: {str(e)}")
+
 
 def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1, quality_boundary: int = 500)-> dict:
     """多线程图片按质量分离主函数"""
     try:
         start_time = time.time()
+        print(f"\n[separate mode] 开始分离图片（按质量）: {input_dir}")
 
         # 获取所有文件，保存为列表
         file_list = []
@@ -137,7 +161,6 @@ def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1, qual
                 file_list.append(f)
 
         # 进度跟踪参数
-
         enum.clear_result()  # 清空结果
 
         enum.set_current_task("separate quality")
@@ -146,9 +169,12 @@ def separate_quality(input_dir: str, output_dir: str, CPU_workers: int = 1, qual
 
         # 创建线程池（根据 CPU 核心数自动调整）
         with concurrent.futures.ThreadPoolExecutor(max_workers=CPU_workers) as executor:
-            # 提交所有处理任务
-            futures = [executor.submit(process_separate_quality, f, input_dir, output_dir, quality_boundary) for f in file_list]
-            
+            # 提交所有处理任务 (将列表推导式改为常规的循环)
+            futures = []
+            for f in file_list:
+                future = executor.submit(process_separate_quality, f, input_dir, output_dir, quality_boundary)
+                futures.append(future)
+
             # 显示进度（可选）
             for future in concurrent.futures.as_completed(futures):
                 try:
@@ -203,8 +229,9 @@ def process_clear_duplicate(filename, input_dir):
 def clear_duplicate(input_dir: str, CPU_workers: int = 1)-> dict:
     """多线程图片查重主函数，使用文件哈希值校验"""
     try:
-        enum.clear_result()
         start_time = time.time()
+        print(f"\n[clear duplicate] 开始图像去重: {input_dir}")
+
         known_hashes.clear()
 
         # 获取所有文件，保存为列表
@@ -250,11 +277,13 @@ def clear_duplicate(input_dir: str, CPU_workers: int = 1)-> dict:
 def clear_cache(path: str)-> dict:
     """ 删除 cache 目录下的所有缓存文件夹和文件 (only JPEG and PNG) """
     if not os.path.exists(path):
-        print(f"[clear cache] 目录不存在: {path}")
+        print(f"\n[clear cache] 目录不存在: {path}")
         return None
 
     start_time = time.time()
-    total_jobs = 0 # 总文件数
+    print(f"\n[clear cache] 开始清除缓存: {path}")
+
+    total_jobs = 0  # 总文件数
     total_size = 0  # 总文件大小（B）
 
     # 进度跟踪参数
@@ -271,7 +300,7 @@ def clear_cache(path: str)-> dict:
         # 遍历根目录下的文件
         for file in files:
             try:
-                if file.endswith(".jpeg") or file.endswith(".jpg") or file.endswith(".png"):
+                if file.endswith(".jpg") or file.endswith(".png"):
                     # 删除文件
                     file_path = os.path.join(root, file)
                     file_size = os.path.getsize(file_path)
